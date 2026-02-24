@@ -1,18 +1,22 @@
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using ShipTrack.OrderService.Data;
 using ShipTrack.OrderService.DTOs;
 using ShipTrack.OrderService.Models;
 using ShipTrack.Shared.Enums;
+using ShipTrack.Shared.Events;
 
 namespace ShipTrack.OrderService.Services;
 
 public class OrderService : IOrderService
 {
     private readonly OrderDbContext _context;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public OrderService(OrderDbContext context)
+    public OrderService(OrderDbContext context, IPublishEndpoint publishEndpoint)
     {
         _context = context;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<IEnumerable<ShipmentResponseDto>> GetAllAsync()
@@ -50,6 +54,19 @@ public class OrderService : IOrderService
 
         _context.Shipments.Add(shipment);
         await _context.SaveChangesAsync();
+
+        // Event yayınla
+        await _publishEndpoint.Publish(new ShipmentCreatedEvent(
+            shipment.Id,
+            shipment.TrackingNumber,
+            shipment.SenderName,
+            shipment.ReceiverName,
+            shipment.OriginPort,
+            shipment.DestinationPort,
+            shipment.WeightKg,
+            shipment.CreatedAt
+        ));
+
         return ToDto(shipment);
     }
 
@@ -58,9 +75,18 @@ public class OrderService : IOrderService
         var shipment = await _context.Shipments.FindAsync(id);
         if (shipment is null || shipment.Status == ShipmentStatus.Delivered) return false;
 
+        var oldStatus = shipment.Status.ToString();
         shipment.Status = ShipmentStatus.Cancelled;
         shipment.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
+
+        // Event yayınla
+        await _publishEndpoint.Publish(new ShipmentCancelledEvent(
+            shipment.Id,
+            shipment.TrackingNumber,
+            shipment.UpdatedAt.Value
+        ));
+
         return true;
     }
 

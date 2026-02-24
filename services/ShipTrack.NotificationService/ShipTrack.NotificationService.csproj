@@ -7,7 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MassTransit" Version="9.0.1" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="9.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\ShipTrack.Shared\ShipTrack.Shared.csproj" />
   </ItemGroup>
 
 </Project>

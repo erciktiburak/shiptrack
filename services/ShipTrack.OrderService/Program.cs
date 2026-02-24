@@ -1,3 +1,4 @@
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using ShipTrack.OrderService.Data;
 using ShipTrack.OrderService.Services;
@@ -12,6 +13,18 @@ builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IOrderService, OrderService>();
+
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMQ:Host"], "/", h =>
+        {
+            h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
+            h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+        });
+    });
+});
 
 var app = builder.Build();
 
