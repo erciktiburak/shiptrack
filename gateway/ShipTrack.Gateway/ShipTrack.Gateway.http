@@ -1,0 +1,6 @@
+@ShipTrack.Gateway_HostAddress = http://localhost:5267
+
+GET {{ShipTrack.Gateway_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

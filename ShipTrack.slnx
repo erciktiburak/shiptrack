@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/gateway/">
+    <Project Path="gateway/ShipTrack.Gateway/ShipTrack.Gateway.csproj" />
+  </Folder>
+  <Folder Name="/services/">
+    <Project Path="services/ShipTrack.NotificationService/ShipTrack.NotificationService.csproj" />
+    <Project Path="services/ShipTrack.OrderService/ShipTrack.OrderService.csproj" />
+    <Project Path="services/ShipTrack.TrackingService/ShipTrack.TrackingService.csproj" />
+  </Folder>
+  <Folder Name="/shared/">
+    <Project Path="shared/ShipTrack.Shared/ShipTrack.Shared.csproj" />
+  </Folder>
+</Solution>

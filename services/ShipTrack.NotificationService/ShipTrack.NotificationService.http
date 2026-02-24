@@ -1,0 +1,6 @@
+@ShipTrack.NotificationService_HostAddress = http://localhost:5047
+
+GET {{ShipTrack.NotificationService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
