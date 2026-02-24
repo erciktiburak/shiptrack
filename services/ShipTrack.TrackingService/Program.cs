@@ -1,11 +1,19 @@
 using MassTransit;
+using Microsoft.EntityFrameworkCore;
 using ShipTrack.TrackingService.Consumers;
+using ShipTrack.TrackingService.Data;
+using ShipTrack.TrackingService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddDbContext<TrackingDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<ITrackingService, TrackingService>();
 
 builder.Services.AddMassTransit(x =>
 {
