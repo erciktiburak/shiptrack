@@ -1,5 +1,8 @@
 using MassTransit;
+using Microsoft.EntityFrameworkCore;
 using ShipTrack.NotificationService.Consumers;
+using ShipTrack.NotificationService.Data;
+using ShipTrack.NotificationService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,9 +10,15 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddDbContext<NotificationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<ShipmentCreatedConsumer>();
+    x.AddConsumer<ShipmentCancelledConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {
