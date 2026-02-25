@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using ShipTrack.OrderService.DTOs;
 using ShipTrack.OrderService.Services;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace ShipTrack.OrderService.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
