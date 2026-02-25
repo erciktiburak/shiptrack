@@ -3,6 +3,7 @@
     <Project Path="gateway/ShipTrack.Gateway/ShipTrack.Gateway.csproj" />
   </Folder>
   <Folder Name="/services/">
+    <Project Path="services/ShipTrack.AuthService/ShipTrack.AuthService.csproj" />
     <Project Path="services/ShipTrack.NotificationService/ShipTrack.NotificationService.csproj" />
     <Project Path="services/ShipTrack.OrderService/ShipTrack.OrderService.csproj" />
     <Project Path="services/ShipTrack.TrackingService/ShipTrack.TrackingService.csproj" />
