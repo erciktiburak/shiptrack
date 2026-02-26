@@ -2,6 +2,7 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using ShipTrack.OrderService.Data;
 using ShipTrack.OrderService.Services;
+using ShipTrack.Shared.Services;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -30,6 +31,13 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "ShipTrack_Order_";
+});
+builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
 builder.Services.AddScoped<IOrderService, OrderService>();
 
