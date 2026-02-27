@@ -1,17 +1,20 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink],
   template: `
     <div class="auth-wrapper">
       <div class="auth-card">
-        <h2>🚢 ShipTrack Login</h2>
+        <h2>🚢 Create Account</h2>
+        <div class="form-group">
+          <label>Username</label>
+          <input [(ngModel)]="username" placeholder="Enter username" />
+        </div>
         <div class="form-group">
           <label>Email</label>
           <input type="email" [(ngModel)]="email" placeholder="Enter email" />
@@ -20,9 +23,8 @@ import { AuthService } from '../../../core/services/auth.service';
           <label>Password</label>
           <input type="password" [(ngModel)]="password" placeholder="Enter password" />
         </div>
-        <p class="error" *ngIf="error">{{ error }}</p>
-        <button (click)="login()">Login</button>
-        <p>No account? <a routerLink="/auth/register">Register</a></p>
+        <button (click)="register()">Register</button>
+        <p>Already have account? <a routerLink="/auth/login">Login</a></p>
       </div>
     </div>
   `,
@@ -34,21 +36,19 @@ import { AuthService } from '../../../core/services/auth.service';
     label { display: block; margin-bottom: 4px; font-weight: 500; }
     input { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
     button { width: 100%; padding: 0.75rem; background: #2c3e50; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; margin-top: 0.5rem; }
-    .error { color: red; font-size: 0.85rem; }
     p { text-align: center; margin-top: 1rem; }
   `]
 })
-export class LoginComponent {
+export class RegisterComponent {
+  username = '';
   email = '';
   password = '';
-  error = '';
 
   constructor(private authService: AuthService, private router: Router) {}
 
-  login() {
-    this.authService.login(this.email, this.password).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
-      error: () => this.error = 'Invalid credentials'
+  register() {
+    this.authService.register(this.username, this.email, this.password).subscribe({
+      next: () => this.router.navigate(['/dashboard'])
     });
   }
 }
