@@ -101,7 +101,6 @@ public class OrderService : IOrderService
         shipment.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        // Cache'i temizle
         await _cache.RemoveAsync(AllShipmentsCacheKey);
         await _cache.RemoveAsync($"{ShipmentCachePrefix}id:{id}");
         await _cache.RemoveAsync($"{ShipmentCachePrefix}track:{shipment.TrackingNumber}");

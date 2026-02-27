@@ -1,5 +1,6 @@
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using ShipTrack.Shared.Services;
 using ShipTrack.TrackingService.Consumers;
 using ShipTrack.TrackingService.Data;
 using ShipTrack.TrackingService.Services;
@@ -32,6 +33,13 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<TrackingDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "ShipTrack_Tracking_";
+});
+builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
 builder.Services.AddScoped<ITrackingService, TrackingService>();
 
