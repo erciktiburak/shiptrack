@@ -1,20 +1,26 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
 
 export interface Shipment {
   id: string;
-  status: 'Pending' | 'InTransit' | 'Delivered';
-  [key: string]: unknown;
+  trackingNumber: string;
+  senderName: string;
+  receiverName: string;
+  originPort: string;
+  destinationPort: string;
+  weightKg: number;
+  status: string;
+  createdAt: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class ShipmentService {
-  private apiUrl = 'http://localhost:5000/api/shipments';
+  private apiUrl = 'http://localhost:5000/api/orders';
 
   constructor(private http: HttpClient) {}
 
-  getAll(): Observable<Shipment[]> {
-    return this.http.get<Shipment[]>(this.apiUrl);
-  }
+  getAll() { return this.http.get<Shipment[]>(this.apiUrl); }
+  getById(id: string) { return this.http.get<Shipment>(`${this.apiUrl}/${id}`); }
+  create(dto: Partial<Shipment>) { return this.http.post<Shipment>(this.apiUrl, dto); }
+  cancel(id: string) { return this.http.delete(`${this.apiUrl}/${id}/cancel`); }
 }
