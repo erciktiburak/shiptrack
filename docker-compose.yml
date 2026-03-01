@@ -1,0 +1,191 @@
+version: '3.9'
+
+services:
+  # ─── INFRASTRUCTURE ───────────────────────────────────────
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: shiptrack-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "${DB_PASSWORD}"
+      MSSQL_PID: "Express"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - shiptrack-network
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_PASSWORD}", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: shiptrack-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASS}"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - shiptrack-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: shiptrack-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - shiptrack-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+  # ─── BACKEND SERVICES ─────────────────────────────────────
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/ShipTrack.AuthService/Dockerfile
+    container_name: shiptrack-auth
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=ShipTrackAuthDb;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True"
+      Jwt__Secret: "${JWT_SECRET}"
+      Jwt__Issuer: "ShipTrack"
+      Jwt__Audience: "ShipTrackClients"
+      Jwt__ExpiryMinutes: "60"
+    ports:
+      - "5004:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - shiptrack-network
+
+  order-service:
+    build:
+      context: .
+      dockerfile: services/ShipTrack.OrderService/Dockerfile
+    container_name: shiptrack-order
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=ShipTrackOrderDb;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True"
+      ConnectionStrings__Redis: "redis:6379"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "${RABBITMQ_USER}"
+      RabbitMQ__Password: "${RABBITMQ_PASS}"
+      Jwt__Secret: "${JWT_SECRET}"
+      Jwt__Issuer: "ShipTrack"
+      Jwt__Audience: "ShipTrackClients"
+    ports:
+      - "5001:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - shiptrack-network
+
+  tracking-service:
+    build:
+      context: .
+      dockerfile: services/ShipTrack.TrackingService/Dockerfile
+    container_name: shiptrack-tracking
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=ShipTrackTrackingDb;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True"
+      ConnectionStrings__Redis: "redis:6379"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "${RABBITMQ_USER}"
+      RabbitMQ__Password: "${RABBITMQ_PASS}"
+      Jwt__Secret: "${JWT_SECRET}"
+      Jwt__Issuer: "ShipTrack"
+      Jwt__Audience: "ShipTrackClients"
+    ports:
+      - "5002:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - shiptrack-network
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/ShipTrack.NotificationService/Dockerfile
+    container_name: shiptrack-notification
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=ShipTrackNotificationDb;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "${RABBITMQ_USER}"
+      RabbitMQ__Password: "${RABBITMQ_PASS}"
+      Jwt__Secret: "${JWT_SECRET}"
+      Jwt__Issuer: "ShipTrack"
+      Jwt__Audience: "ShipTrackClients"
+    ports:
+      - "5003:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - shiptrack-network
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/ShipTrack.Gateway/Dockerfile
+    container_name: shiptrack-gateway
+    environment:
+      ReverseProxy__Clusters__order-cluster__Destinations__destination1__Address: "http://order-service:8080"
+      ReverseProxy__Clusters__tracking-cluster__Destinations__destination1__Address: "http://tracking-service:8080"
+      ReverseProxy__Clusters__notification-cluster__Destinations__destination1__Address: "http://notification-service:8080"
+    ports:
+      - "5000:8080"
+    depends_on:
+      - order-service
+      - tracking-service
+      - notification-service
+    networks:
+      - shiptrack-network
+
+  frontend:
+    build:
+      context: ./frontend/shiptrack-ui
+      dockerfile: Dockerfile
+    container_name: shiptrack-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - gateway
+    networks:
+      - shiptrack-network
+
+# ─── VOLUMES & NETWORKS ───────────────────────────────────
+volumes:
+  sqlserver_data:
+  rabbitmq_data:
+  redis_data:
+
+networks:
+  shiptrack-network:
+    driver: bridge
+
